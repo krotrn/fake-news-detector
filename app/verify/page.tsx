@@ -25,7 +25,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { QueryResponse, searchNews } from "@/action/queries";
-import useSearchQuery from "@/hooks/useSearchQuery";
 
 export default function VerifyPage() {
   const [query, setQuery] = useState("");

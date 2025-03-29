@@ -38,9 +38,9 @@ function buildPrompt(query: string): string {
   } else if (/real|verified|true/i.test(query)) {
     statusInstruction =
       "Focus on generating articles with a 'verified' status (with explanations about their authenticity and multiple sources confirming the information)";
-  }
+  } else statusInstruction = "";
 
-  return `Please generate a list of 5 news articles related to "${query}". ${statusInstruction}. Include fake, one questionable, and one verified article. Each article should have the following fields:
+  return `Please generate a list of 5 news articles related to "${query}". ${statusInstruction}. Each article should have the following fields:
 - id (number)
 - title (string)
 - source (string)

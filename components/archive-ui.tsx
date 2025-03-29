@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,7 +17,6 @@ import {
   HelpCircle,
   Search,
 } from "lucide-react";
-import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -30,7 +28,11 @@ import {
 import { ArchiveProps } from "@/services/archive";
 import useSearchQuery from "@/hooks/useSearchQuery";
 
-export default function ArchivePage({archives} :{archives:ArchiveProps[]}) {
+export default function ArchivePage({
+  archives,
+}: {
+  archives: ArchiveProps[];
+}) {
   const [filteredItems, setFilteredItems] = useState<ArchiveProps[]>(archives);
   const [searchKeyword, setSearchKeyword] = useSearchQuery("");
   const [selectedCategory, setSelectedCategory] = useSearchQuery("catagory");

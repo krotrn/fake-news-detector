@@ -32,7 +32,7 @@ export const fetchTrendingArticles = cache(async(): Promise<TrendingProps[]> =>{
         },
         {
           role: "user",
-          content: `Please generate a list of 6 trending news articles with recent dates (e.g., "2 hours ago", "5 hours ago", "1 day ago"). Include at least one fake, one questionable, and one verified article. Each article should have the following fields:
+          content: `Please generate a list of at least 6 trending news articles with recent dates (e.g., "2 hours ago", "5 hours ago", "1 day ago"). Include at least one fake, one questionable, and one verified article. Each article should have the following fields:
 - id (number)
 - title (string)
 - source (string)
@@ -102,7 +102,7 @@ Here is an example of the format I want:
   }
 ]
 \`\`\`
-Please generate 6 articles in this exact format.`,
+Please generate atleast 6 articles in this exact format.`,
         },
       ],
       model: "gpt-4o",

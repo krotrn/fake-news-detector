@@ -2,12 +2,10 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   AlertTriangle,
   CheckCircle,
@@ -16,47 +14,11 @@ import {
   ThumbsUp,
   TrendingUp,
 } from "lucide-react";
-import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchTrendingArticles } from "@/services/trending";
+import { fetchTrendingArticles, TrendingProps } from "@/services/trending";
 
 export default async function TrendingPage() {
   const trendingItems = await fetchTrendingArticles();
-  console.log(trendingItems);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "fake":
-        return (
-          <Badge variant="destructive" className="flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            Fake
-          </Badge>
-        );
-      case "questionable":
-        return (
-          <Badge
-            variant="secondary"
-            className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600"
-          >
-            <HelpCircle className="h-3 w-3" />
-            Questionable
-          </Badge>
-        );
-      case "verified":
-        return (
-          <Badge
-            variant="default"
-            className="flex items-center gap-1 bg-green-500 hover:bg-green-600"
-          >
-            <CheckCircle className="h-3 w-3" />
-            Verified
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -117,7 +79,7 @@ export default async function TrendingPage() {
   );
 }
 
-function TrendingCard({ item }: { item: any }) {
+function TrendingCard({ item }: { item: TrendingProps }) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "fake":

@@ -1,8 +1,6 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { AlertTriangle, CheckCircle, HelpCircle, ThumbsDown, ThumbsUp } from "lucide-react"
-import Link from "next/link"
 import { fetchTrendingArticles } from "@/services/trending";
 
 export default async function TrendingMisinformation() {

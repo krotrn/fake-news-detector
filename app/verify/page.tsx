@@ -96,12 +96,11 @@ export default function VerifyPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">News Verification Tool</h1>
-
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Verify News</CardTitle>
             <CardDescription>
-              Enter a news headline or URL to verify its credibility
+              Enter a news headline to verify its credibility
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -110,7 +109,7 @@ export default function VerifyPage() {
               className="flex flex-col sm:flex-row gap-4"
             >
               <Input
-                placeholder="Enter news article URL"
+                placeholder="Enter news Headline"
                 name="query"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -183,6 +182,7 @@ export default function VerifyPage() {
                     {result.sources.map((source, index) => (
                       <li key={index}>
                         <a
+                          about="_blank"
                           href={source.url}
                           className="text-primary hover:underline"
                         >
@@ -273,25 +273,6 @@ export default function VerifyPage() {
               Frequently Asked Questions
             </h2>
             <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-lg">
-                  How accurate is the verification?
-                </h3>
-                <p className="text-muted-foreground">
-                  Our system achieves over 85% accuracy in identifying fake
-                  news, with continuous improvements through machine learning
-                  and user feedback.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium text-lg">
-                  Can I verify social media posts?
-                </h3>
-                <p className="text-muted-foreground">
-                  Yes, you can verify social media posts by pasting the URL or
-                  copying the content into the headline field.
-                </p>
-              </div>
               <div>
                 <h3 className="font-medium text-lg">
                   How can I contribute to the platform?

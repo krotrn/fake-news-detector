@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { cache } from "react";
 
-interface ArchiveProps{
+export interface ArchiveProps{
   id: string;
   title: string;
   category: string;

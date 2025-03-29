@@ -11,10 +11,10 @@ export default function Home() {
       <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-16">
         <div className="flex max-w-[980px] flex-col items-start gap-2">
           <h1 className="text-3xl font-extrabold leading-tight tracking-tighter md:text-5xl lg:text-6xl">
-            Fact<span className="text-primary">Check</span>
+            Legit<span className="text-primary">Fact</span>
           </h1>
           <p className="max-w-[700px] text-lg text-muted-foreground md:text-xl">
-            Verify news articles, discover trending misinformation, and access fact-checked reports.
+            Verify news articles, discover trending misinformation, and access legit-fact reports.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
@@ -30,7 +30,7 @@ export default function Home() {
           </Link>
           <Link href="/archive" className="w-full sm:w-auto">
             <Button variant="outline" size="lg" className="w-full">
-              <Archive className="mr-2 h-4 w-4" /> Fact-Checked Archive
+              <Archive className="mr-2 h-4 w-4" /> Legit-fact Archive
             </Button>
           </Link>
         </div>
@@ -46,11 +46,11 @@ export default function Home() {
         <Card className="w-full">
           <CardHeader>
             <CardTitle>News Verification Tool</CardTitle>
-            <CardDescription>Enter a news headline or URL to verify its credibility</CardDescription>
+            <CardDescription>Enter a news headline to verify its credibility</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="flex flex-col sm:flex-row gap-4">
-              <Input placeholder="Enter news headline or URL" className="flex-1" />
+              <Input placeholder="Enter news headline" className="flex-1" />
               <Button type="submit">Verify</Button>
             </form>
           </CardContent>
@@ -79,7 +79,7 @@ export default function Home() {
               <CardTitle>Input News</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Enter a news headline or URL to begin the verification process.</p>
+              <p className="text-muted-foreground">Enter a news headline to begin the verification process.</p>
             </CardContent>
           </Card>
           <Card>

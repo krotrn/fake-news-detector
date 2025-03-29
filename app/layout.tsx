@@ -8,8 +8,8 @@ import Footer from "@/components/footer"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "FactCheck - Fake News Detection",
-  description: "Verify news articles, discover trending misinformation, and access fact-checked reports."
+  title: "LegitFact - Fake News Detection",
+  description: "Verify news articles, discover trending misinformation, and access legit-fact reports."
 }
 
 export default function RootLayout({

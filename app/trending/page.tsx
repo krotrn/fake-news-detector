@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchNewsArticles } from "@/services/trending";
+import { fetchTrendingArticles } from "@/services/trending";
 
 export default async function TrendingPage() {
-  const trendingItems = await fetchNewsArticles();
+  const trendingItems = await fetchTrendingArticles();
   console.log(trendingItems);
 
   const getStatusBadge = (status: string) => {
@@ -66,7 +66,7 @@ export default async function TrendingPage() {
       </div>
 
       <p className="text-muted-foreground mb-8 max-w-3xl">
-        Stay informed about the latest news stories that are being fact-checked.
+        Stay informed about the latest news stories that are being legit-fact.
         This page shows trending articles that have been verified by our system
         and community.
       </p>
@@ -182,13 +182,6 @@ function TrendingCard({ item }: { item: any }) {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
-        <Link href={`/verify/${item.id}`} className="w-full">
-          <Button variant="outline" className="w-full">
-            View Details
-          </Button>
-        </Link>
-      </CardFooter>
     </Card>
   );
 }

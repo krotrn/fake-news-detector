@@ -3,34 +3,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, CheckCircle, HelpCircle, ThumbsDown, ThumbsUp } from "lucide-react"
 import Link from "next/link"
+import { fetchTrendingArticles } from "@/services/trending";
 
-export default function TrendingMisinformation() {
-  const trendingItems = [
-    {
-      id: 1,
-      title: "Scientists discover new planet that can sustain human life",
-      source: "Science Daily",
-      date: "2 hours ago",
-      status: "fake",
-      votes: { up: 24, down: 156 },
-    },
-    {
-      id: 2,
-      title: "New study links common food additive to health concerns",
-      source: "Health News Network",
-      date: "5 hours ago",
-      status: "questionable",
-      votes: { up: 87, down: 92 },
-    },
-    {
-      id: 3,
-      title: "Major tech company announces significant layoffs amid restructuring",
-      source: "Tech Insider",
-      date: "1 day ago",
-      status: "verified",
-      votes: { up: 245, down: 18 },
-    },
-  ]
+export default async function TrendingMisinformation() {
+  const trendingItems = await fetchTrendingArticles()
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -87,13 +63,6 @@ export default function TrendingMisinformation() {
               </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Link href={`/verify/${item.id}`} className="w-full">
-              <Button variant="outline" className="w-full">
-                View Details
-              </Button>
-            </Link>
-          </CardFooter>
         </Card>
       ))}
     </>

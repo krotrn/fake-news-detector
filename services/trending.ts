@@ -14,7 +14,7 @@ export interface TrendingProps {
   excerpt: string;
 }
 
-export const fetchNewsArticles = cache(async(): Promise<TrendingProps[]> =>{
+export const fetchTrendingArticles = cache(async(): Promise<TrendingProps[]> =>{
   const client = new OpenAI({
     baseURL: "https://models.inference.ai.azure.com",
     apiKey: process.env.OPENAI_API_KEY,

@@ -5,82 +5,10 @@ import { AlertTriangle, Archive, CheckCircle, HelpCircle, Search } from "lucide-
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { fetchArchivedNews } from "@/services/archive";
 
-export default function ArchivePage() {
-  const archiveItems = [
-    {
-      id: 1,
-      title: "5G networks cause health problems",
-      category: "Technology",
-      date: "March 15, 2024",
-      status: "fake",
-      summary:
-        "Claims that 5G networks cause health problems have been thoroughly debunked by scientific research. Multiple studies have found no evidence of harmful effects from 5G technology.",
-    },
-    {
-      id: 2,
-      title: "New vaccine developed with 95% efficacy rate",
-      category: "Health",
-      date: "March 10, 2024",
-      status: "verified",
-      summary:
-        "Clinical trials have confirmed the efficacy rate of this new vaccine. The data has been peer-reviewed and published in reputable medical journals.",
-    },
-    {
-      id: 3,
-      title: "Stock market predicted to crash next month",
-      category: "Finance",
-      date: "March 5, 2024",
-      status: "questionable",
-      summary:
-        "While some economic indicators show potential market volatility, the specific prediction of a crash next month is not supported by consensus among economic experts.",
-    },
-    {
-      id: 4,
-      title: "Famous celebrity secretly married in private ceremony",
-      category: "Entertainment",
-      date: "February 28, 2024",
-      status: "fake",
-      summary:
-        "Representatives for the celebrity have officially denied this claim. No evidence has been provided to support the marriage claim.",
-    },
-    {
-      id: 5,
-      title: "New environmental policy to reduce carbon emissions by 30%",
-      category: "Politics",
-      date: "February 20, 2024",
-      status: "verified",
-      summary:
-        "This policy has been officially announced and the details match the government's published documents and statements.",
-    },
-    {
-      id: 6,
-      title: "Artificial sweeteners linked to increased cancer risk",
-      category: "Health",
-      date: "February 15, 2024",
-      status: "questionable",
-      summary:
-        "Some studies suggest a potential link, but the evidence is not conclusive and more research is needed. The article overstates the certainty of this connection.",
-    },
-    {
-      id: 7,
-      title: "Major city implementing four-day work week for all employees",
-      category: "Business",
-      date: "February 10, 2024",
-      status: "fake",
-      summary:
-        "City officials have confirmed this is false. While some discussions about flexible work arrangements have occurred, no policy for a universal four-day work week has been approved.",
-    },
-    {
-      id: 8,
-      title: "New study finds correlation between exercise and improved mental health",
-      category: "Health",
-      date: "February 5, 2024",
-      status: "verified",
-      summary:
-        "This study has been published in peer-reviewed journals and its methodology and findings are consistent with existing research in the field.",
-    },
-  ]
+export default async function ArchivePage() {
+  const archiveItems = await fetchArchivedNews();
 
   const getStatusBadge = (status: string) => {
     switch (status) {

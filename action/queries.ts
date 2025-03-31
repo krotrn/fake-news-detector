@@ -83,37 +83,37 @@ async function generateSearchResults(query: string): Promise<QueryResponse[]> {
 
   const prompt = buildPrompt(query);
 
-  const response = await client.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a helpful assistant that generates examples of news articles.",
-      },
-      { role: "user", content: prompt },
-    ],
-    model: "gpt-4o",
-    temperature: 1,
-    max_tokens: 4096,
-    top_p: 1,
-  });
-
-  if (!response.choices[0].message.content) {
-    throw new Error("Error generating News");
-  }
-
-  const content = response.choices[0].message.content.substring(
-    7,
-    response.choices[0].message.content.length - 4
-  );
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error("Invalid response format: JSON array not found");
-  }
-
   try {
+    const response = await client.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant that generates examples of news articles.",
+        },
+        { role: "user", content: prompt },
+      ],
+      model: "gpt-4o",
+      temperature: 1,
+      max_tokens: 4096,
+      top_p: 1,
+    });
+
+    if (!response.choices[0].message.content) {
+      throw new Error("Error generating News");
+    }
+
+    const content = response.choices[0].message.content.substring(
+      7,
+      response.choices[0].message.content.length - 4
+    );
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error("Invalid response format: JSON array not found");
+    }
+
     return JSON.parse(content);
   } catch (err) {
-    throw new Error("Failed to parse JSON output from OpenAI");
+    return [];
   }
 }

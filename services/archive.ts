@@ -122,7 +122,7 @@ Please generate 8 articles in this exact format.`,
     }
     responseContent = response.choices[0].message.content;
   } catch (error) {
-    throw new Error("Error during API call: " + error);
+    return [];
   }
   const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
   const jsonMatch = responseContent.match(jsonRegex);

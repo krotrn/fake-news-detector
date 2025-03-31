@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, TrendingUp, Archive } from "lucide-react"
 import TrendingMisinformation from "@/components/trending-misinformation"
 
@@ -34,27 +33,6 @@ export default function Home() {
             </Button>
           </Link>
         </div>
-      </section>
-
-      <section className="py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Verify News</h2>
-          <Link href="/verify">
-            <Button variant="ghost">View all</Button>
-          </Link>
-        </div>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>News Verification Tool</CardTitle>
-            <CardDescription>Enter a news headline to verify its credibility</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="flex flex-col sm:flex-row gap-4">
-              <Input placeholder="Enter news headline" className="flex-1" />
-              <Button type="submit">Verify</Button>
-            </form>
-          </CardContent>
-        </Card>
       </section>
 
       <section className="py-8">

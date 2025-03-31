@@ -31,7 +31,10 @@ export default function VerifyPage() {
           const response = await searchNews(query);
           setResult(response);
         } catch (error) {
-          setError("Something went wrong.")
+          if (error instanceof Error) {
+            setError(error.message);
+          }
+          setError("Something went wrong.");
         }
       });
     } catch (error) {
@@ -72,7 +75,8 @@ export default function VerifyPage() {
         {isPending && <PendingCard />}
         {error && <ErrorCard errorMessage={error} />}
 
-        {results && !error &&
+        {results &&
+          !error &&
           results.map((result) => (
             <ResultCard key={result.id} result={result} />
           ))}

@@ -1,7 +1,10 @@
-"use server";
+"use client";
 
 import OpenAI from "openai";
-import { cache } from "react";
+import {
+  cleanErrorMessage,
+  withErrorSuppression,
+} from "@/lib/error-suppression";
 
 export interface QueryResponse {
   id: string;
@@ -13,18 +16,84 @@ export interface QueryResponse {
   sources: { name: string; url: string }[];
 }
 
-export const searchNews = async (query: string): Promise<QueryResponse[]> => {
+export type ErrorType = "quota" | "auth" | "network" | "generic" | "validation";
+
+export interface SearchResult {
+  success: boolean;
+  data?: QueryResponse[];
+  error?: {
+    message: string;
+    type: ErrorType;
+    canRetry: boolean;
+  };
+}
+
+export const searchNews = async (query: string): Promise<SearchResult> => {
   if (!query.trim()) {
-    throw new Error("empty query");
+    return {
+      success: false,
+      error: {
+        message: "Please enter a news headline to verify.",
+        type: "validation",
+        canRetry: false,
+      },
+    };
   }
+
+  const apiKey = localStorage.getItem("openai_api_key");
+  if (!apiKey) {
+    return {
+      success: false,
+      error: {
+        message: "API key not found. Please set up your OpenAI API key.",
+        type: "auth",
+        canRetry: false,
+      },
+    };
+  }
+
   try {
-    const articles = await generateSearchResults(query);
-    return articles;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message);
+    const result = await generateSearchResults(query, apiKey);
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: {
+          message: result.error?.message || "Failed to verify news",
+          type: result.error?.type || "generic",
+          canRetry: result.error?.retryable || true,
+        },
+      };
     }
-    throw new Error("something went wrong.");
+
+    if (!result.data || result.data.length === 0) {
+      return {
+        success: false,
+        error: {
+          message: "No results found for your query",
+          type: "generic",
+          canRetry: true,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: result.data,
+    };
+  } catch (error) {
+    // This catch block should now only handle truly unexpected errors
+    // since generateSearchResults returns status objects for all user-facing errors
+    console.error("Unexpected error in searchNews:", error);
+
+    return {
+      success: false,
+      error: {
+        message: "An unexpected error occurred. Please try again.",
+        type: "generic",
+        canRetry: true,
+      },
+    };
   }
 };
 
@@ -75,45 +144,198 @@ Example format:
 Generate 5 articles related to "${query}".`;
 }
 
-async function generateSearchResults(query: string): Promise<QueryResponse[]> {
+interface GenerateSearchResultsResponse {
+  success: boolean;
+  data?: QueryResponse[];
+  error?: {
+    type: "quota" | "auth" | "network" | "validation" | "generic";
+    message: string;
+    retryable: boolean;
+  };
+}
+
+async function safeOpenAICall(
+  client: OpenAI,
+  prompt: string
+): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+}> {
+  return withErrorSuppression(async () => {
+    try {
+      const response = await client.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant that generates examples of news articles.",
+          },
+          { role: "user", content: prompt },
+        ],
+        model: "gpt-4o",
+        temperature: 1,
+        max_tokens: 4096,
+        top_p: 1,
+      });
+
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      // Clean the error message for user display
+      return {
+        success: false,
+        error: cleanErrorMessage(error),
+      };
+    }
+  });
+}
+
+async function generateSearchResults(
+  query: string,
+  apiKey: string
+): Promise<GenerateSearchResultsResponse> {
+  // Note: dangerouslyAllowBrowser is required for client-side usage
+  // The API key is provided by the user and stored locally in their browser
+  // It's never transmitted to our servers, only directly to OpenAI's API
   const client = new OpenAI({
-    baseURL: "https://models.inference.ai.azure.com",
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: apiKey,
+    dangerouslyAllowBrowser: true,
   });
 
   const prompt = buildPrompt(query);
 
+  // Use the safe wrapper to prevent raw errors from reaching Next.js dev tools
+  const result = await safeOpenAICall(client, prompt);
+
+  if (!result.success) {
+    // Handle specific OpenAI API errors with clean messages
+    if (result.error) {
+      if (
+        result.error.includes("429") ||
+        result.error.includes("quota") ||
+        result.error.includes("billing")
+      ) {
+        return {
+          success: false,
+          error: {
+            type: "quota",
+            message:
+              "OpenAI API quota exceeded. Please check your plan and billing details at platform.openai.com",
+            retryable: false,
+          },
+        };
+      }
+      if (
+        result.error.includes("401") ||
+        result.error.includes("Unauthorized")
+      ) {
+        return {
+          success: false,
+          error: {
+            type: "auth",
+            message:
+              "Invalid API key. Please check your OpenAI API key is correct and active.",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("403") || result.error.includes("Forbidden")) {
+        return {
+          success: false,
+          error: {
+            type: "auth",
+            message: "Access denied. Please check your API key permissions.",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("rate limit")) {
+        return {
+          success: false,
+          error: {
+            type: "quota",
+            message: "Rate limit exceeded. Please wait a moment and try again.",
+            retryable: true,
+          },
+        };
+      }
+
+      // For network errors or other API issues
+      if (
+        result.error.includes("network") ||
+        result.error.includes("timeout") ||
+        result.error.includes("connect")
+      ) {
+        return {
+          success: false,
+          error: {
+            type: "network",
+            message:
+              "Network error. Please check your internet connection and try again.",
+            retryable: true,
+          },
+        };
+      }
+    }
+
+    // For any other unexpected errors
+    return {
+      success: false,
+      error: {
+        type: "generic",
+        message:
+          "Failed to verify news. Please try again or check your API key.",
+        retryable: true,
+      },
+    };
+  }
+
+  const response = result.data;
+
+  if (!response.choices[0].message.content) {
+    return {
+      success: false,
+      error: {
+        type: "generic",
+        message: "No response content received from OpenAI API",
+        retryable: true,
+      },
+    };
+  }
+
+  const content = response.choices[0].message.content.substring(
+    7,
+    response.choices[0].message.content.length - 4
+  );
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) {
+    return {
+      success: false,
+      error: {
+        type: "validation",
+        message: "Invalid response format: JSON array not found",
+        retryable: true,
+      },
+    };
+  }
+
   try {
-    const response = await client.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful assistant that generates examples of news articles.",
-        },
-        { role: "user", content: prompt },
-      ],
-      model: "gpt-4o",
-      temperature: 1,
-      max_tokens: 4096,
-      top_p: 1,
-    });
-
-    if (!response.choices[0].message.content) {
-      throw new Error("Error generating News");
-    }
-
-    const content = response.choices[0].message.content.substring(
-      7,
-      response.choices[0].message.content.length - 4
-    );
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error("Invalid response format: JSON array not found");
-    }
-
-    return JSON.parse(content);
-  } catch (err) {
-    return [];
+    const data = JSON.parse(content);
+    return {
+      success: true,
+      data,
+    };
+  } catch (parseError) {
+    return {
+      success: false,
+      error: {
+        type: "validation",
+        message: "Failed to parse response data",
+        retryable: true,
+      },
+    };
   }
 }

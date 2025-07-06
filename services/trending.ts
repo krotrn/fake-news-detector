@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 import { cache } from "react";
+import {
+  withErrorSuppression,
+  cleanErrorMessage,
+} from "@/lib/error-suppression";
 
 export interface TrendingProps {
   id: number;
@@ -14,25 +18,38 @@ export interface TrendingProps {
   excerpt: string;
 }
 
-export const fetchTrendingArticles = cache(async(): Promise<TrendingProps[]> =>{
-  const client = new OpenAI({
-    baseURL: "https://models.inference.ai.azure.com",
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+interface TrendingResult {
+  success: boolean;
+  data?: TrendingProps[];
+  error?: {
+    type: "quota" | "auth" | "network" | "validation" | "generic";
+    message: string;
+    retryable: boolean;
+  };
+}
 
-  let responseContent: string;
+async function safeTrendingApiCall(apiKey: string): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+}> {
+  return withErrorSuppression(async () => {
+    try {
+      const client = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true,
+      });
 
-  try {
-    const response = await client.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful assistant that generates examples of trending news articles, including fake, questionable, and verified ones, with detailed information.",
-        },
-        {
-          role: "user",
-          content: `Please generate a list of at least 6 trending news articles with recent dates (e.g., "2 hours ago", "5 hours ago", "1 day ago"). Include at least one fake, one questionable, and one verified article. Each article should have the following fields:
+      const response = await client.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant that generates examples of trending news articles, including fake, questionable, and verified ones, with detailed information.",
+          },
+          {
+            role: "user",
+            content: `Please generate a list of at least 6 trending news articles with recent dates (e.g., "2 hours ago", "5 hours ago", "1 day ago"). Include at least one fake, one questionable, and one verified article. Each article should have the following fields:
 - id (number)
 - title (string)
 - source (string)
@@ -54,80 +71,168 @@ Here is an example of the format I want:
     "status": "fake",
     "votes": { "up": 24, "down": 156 },
     "excerpt": "The article claims scientists have discovered a habitable planet just 4 light years away. This is false - while exoplanets have been discovered, none have been confirmed to be habitable for humans."
-  },
-  {
-    "id": 2,
-    "title": "New study links common food additive to health concerns",
-    "source": "Health News Network",
-    "date": "5 hours ago",
-    "status": "questionable",
-    "votes": { "up": 87, "down": 92 },
-    "excerpt": "The article cites a preliminary study with a small sample size. While the study exists, its findings are preliminary and have not been peer-reviewed or replicated in larger studies."
-  },
-  {
-    "id": 3,
-    "title": "Major tech company announces significant layoffs amid restructuring",
-    "source": "Tech Insider",
-    "date": "1 day ago",
-    "status": "verified",
-    "votes": { "up": 245, "down": 18 },
-    "excerpt": "This news has been confirmed through official company statements and multiple reliable sources. The numbers and timeline reported are accurate."
-  },
-  {
-    "id": 4,
-    "title": "Government secretly implementing new surveillance program",
-    "source": "Freedom Watch",
-    "date": "3 hours ago",
-    "status": "fake",
-    "votes": { "up": 56, "down": 203 },
-    "excerpt": "The article makes claims without any credible sources or evidence. Official government sources have denied these claims, and no reputable news outlets have corroborated this information."
-  },
-  {
-    "id": 5,
-    "title": "Celebrity announces shocking career change",
-    "source": "Entertainment Today",
-    "date": "12 hours ago",
-    "status": "questionable",
-    "votes": { "up": 112, "down": 89 },
-    "excerpt": "While the celebrity mentioned has made statements about exploring new opportunities, the specific career change claimed in the article has not been confirmed by the celebrity or their representatives."
-  },
-  {
-    "id": 6,
-    "title": "New legislation passed to address climate change",
-    "source": "Policy News",
-    "date": "2 days ago",
-    "status": "verified",
-    "votes": { "up": 189, "down": 42 },
-    "excerpt": "The legislation described has been officially passed and the details reported match the official government records and statements from multiple officials."
   }
 ]
 \`\`\`
-Please generate atleast 6 articles in this exact format.`,
-        },
-      ],
-      model: "gpt-4o",
-      temperature: 1,
-      max_tokens: 4096,
-      top_p: 1,
-    });
+Please generate at least 6 articles in this exact format.`,
+          },
+        ],
+        model: "gpt-4o",
+        temperature: 1,
+        max_tokens: 4096,
+        top_p: 1,
+      });
 
-    if (!response.choices || !response.choices[0].message.content) {
-      throw new Error("Error generating news: Response content is empty");
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: cleanErrorMessage(error),
+      };
     }
-    responseContent = response.choices[0].message.content;
-  } catch (error) {
-    return [];
+  });
+}
+
+export async function fetchTrendingArticles(
+  apiKey: string
+): Promise<TrendingResult> {
+  if (!apiKey || apiKey.trim().length === 0) {
+    return {
+      success: false,
+      error: {
+        type: "auth",
+        message: "Please enter your OpenAI API key",
+        retryable: false,
+      },
+    };
   }
 
+  const result = await safeTrendingApiCall(apiKey);
+
+  if (!result.success) {
+    if (result.error) {
+      if (
+        result.error.includes("429") ||
+        result.error.includes("quota") ||
+        result.error.includes("billing")
+      ) {
+        return {
+          success: false,
+          error: {
+            type: "quota",
+            message:
+              "OpenAI API quota exceeded. Please check your plan and billing details at platform.openai.com",
+            retryable: false,
+          },
+        };
+      }
+      if (
+        result.error.includes("401") ||
+        result.error.includes("Unauthorized")
+      ) {
+        return {
+          success: false,
+          error: {
+            type: "auth",
+            message:
+              "Invalid API key. Please check your OpenAI API key is correct and active.",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("403") || result.error.includes("Forbidden")) {
+        return {
+          success: false,
+          error: {
+            type: "auth",
+            message: "Access denied. Please check your API key permissions.",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("rate limit")) {
+        return {
+          success: false,
+          error: {
+            type: "quota",
+            message: "Rate limit exceeded. Please wait a moment and try again.",
+            retryable: true,
+          },
+        };
+      }
+
+      if (
+        result.error.includes("network") ||
+        result.error.includes("timeout") ||
+        result.error.includes("connect")
+      ) {
+        return {
+          success: false,
+          error: {
+            type: "network",
+            message:
+              "Network error. Please check your internet connection and try again.",
+            retryable: true,
+          },
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: {
+        type: "generic",
+        message: "Failed to fetch trending articles. Please try again.",
+        retryable: true,
+      },
+    };
+  }
+
+  const response = result.data;
+
+  if (!response.choices || !response.choices[0].message.content) {
+    return {
+      success: false,
+      error: {
+        type: "generic",
+        message: "No response content received from OpenAI API",
+        retryable: true,
+      },
+    };
+  }
+
+  const responseContent = response.choices[0].message.content;
   const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
   const jsonMatch = responseContent.match(jsonRegex);
+
   if (!jsonMatch) {
-    throw new Error("Invalid response format: JSON array not found in the response");
+    return {
+      success: false,
+      error: {
+        type: "validation",
+        message: "Invalid response format: JSON array not found",
+        retryable: true,
+      },
+    };
   }
 
   try {
-    return JSON.parse(jsonMatch[1]);
+    const data = JSON.parse(jsonMatch[1]);
+    return {
+      success: true,
+      data,
+    };
   } catch (parseError) {
-    throw new Error("Error parsing JSON: " + parseError);
+    return {
+      success: false,
+      error: {
+        type: "validation",
+        message: "Failed to parse response data",
+        retryable: true,
+      },
+    };
   }
-})
+}

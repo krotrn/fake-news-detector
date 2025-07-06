@@ -1,7 +1,11 @@
 import OpenAI from "openai";
 import { cache } from "react";
+import {
+  withErrorSuppression,
+  cleanErrorMessage,
+} from "@/lib/error-suppression";
 
-export interface ArchiveProps{
+export interface ArchiveProps {
   id: string;
   title: string;
   category: string;
@@ -10,24 +14,38 @@ export interface ArchiveProps{
   summary: string;
 }
 
-export const fetchArchivedNews = cache(async(): Promise<ArchiveProps[]> => {
-  const client = new OpenAI({
-    baseURL: "https://models.inference.ai.azure.com",
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+interface ArchiveResult {
+  success: boolean;
+  data?: ArchiveProps[];
+  error?: {
+    type: "quota" | "auth" | "network" | "validation" | "generic";
+    message: string;
+    retryable: boolean;
+  };
+}
 
-  let responseContent: string;
-  try {
-    const response = await client.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful assistant that generates examples of archived news articles, including fake, questionable, and verified ones, with detailed information.",
-        },
-        {
-          role: "user",
-          content: `Please generate a list of 8 archived news articles with dates from the past few months (e.g., "March 15, 2024", "February 28, 2024"). Include at least two fake, two questionable, and two verified articles. Each article should have the following fields:
+async function safeArchiveApiCall(apiKey: string): Promise<{
+  success: boolean;
+  data?: OpenAI.Chat.Completions.ChatCompletion;
+  error?: string;
+}> {
+  return withErrorSuppression(async () => {
+    try {
+      const client = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true,
+      });
+
+      const response = await client.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant that generates examples of archived news articles, including fake, questionable, and verified ones, with detailed information.",
+          },
+          {
+            role: "user",
+            content: `Please generate a list of 8 archived news articles with dates from the past few months (e.g., "March 15, 2024", "February 28, 2024"). Include at least two fake, two questionable, and two verified articles. Each article should have the following fields:
 - id (number)
 - title (string)
 - category (string: e.g., "Technology", "Health", "Finance", "Entertainment", "Politics", "Business")
@@ -109,30 +127,163 @@ Here is an example of the format I want:
 \`\`\`
 
 Please generate 8 articles in this exact format.`,
-        },
-      ],
-      model: "gpt-4o",
-      temperature: 1,
-      max_tokens: 4096,
-      top_p: 1,
-    });
+          },
+        ],
+        model: "gpt-4o",
+        temperature: 1,
+        max_tokens: 4096,
+        top_p: 1,
+      });
 
-    if (!response.choices || !response.choices[0].message.content) {
-      throw new Error("Error generating news: Response content is empty");
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: cleanErrorMessage(error),
+      };
     }
-    responseContent = response.choices[0].message.content;
-  } catch (error) {
-    return [];
+  });
+}
+
+export async function fetchArchivedNews(apiKey: string): Promise<ArchiveResult> {
+  if (!apiKey || apiKey.trim().length === 0) {
+    return {
+      success: false,
+      error: {
+        type: "auth",
+        message: "Please enter your OpenAI API key",
+        retryable: false,
+      },
+    };
   }
+
+  const result = await safeArchiveApiCall(apiKey);
+
+  if (!result.success) {
+    // Handle specific OpenAI API errors with clean messages
+    if (result.error) {
+      if (result.error.includes("429") || result.error.includes("quota") || result.error.includes("billing")) {
+        return {
+          success: false,
+          error: {
+            type: "quota",
+            message: "OpenAI API quota exceeded. Please check your plan and billing details at platform.openai.com",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("401") || result.error.includes("Unauthorized")) {
+        return {
+          success: false,
+          error: {
+            type: "auth",
+            message: "Invalid API key. Please check your OpenAI API key is correct and active.",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("403") || result.error.includes("Forbidden")) {
+        return {
+          success: false,
+          error: {
+            type: "auth",
+            message: "Access denied. Please check your API key permissions.",
+            retryable: false,
+          },
+        };
+      }
+      if (result.error.includes("rate limit")) {
+        return {
+          success: false,
+          error: {
+            type: "quota",
+            message: "Rate limit exceeded. Please wait a moment and try again.",
+            retryable: true,
+          },
+        };
+      }
+      
+      // For network errors or other API issues
+      if (result.error.includes("network") || result.error.includes("timeout") || result.error.includes("connect")) {
+        return {
+          success: false,
+          error: {
+            type: "network",
+            message: "Network error. Please check your internet connection and try again.",
+            retryable: true,
+          },
+        };
+      }
+    }
+
+    // For any other unexpected errors
+    return {
+      success: false,
+      error: {
+        type: "generic",
+        message: "Failed to fetch archived articles. Please try again.",
+        retryable: true,
+      },
+    };
+  }
+
+  const response = result.data;
+  
+  if (!response || !response.choices || !response.choices[0].message.content) {
+    return {
+      success: false,
+      error: {
+        type: "generic",
+        message: "No response content received from OpenAI API",
+        retryable: true,
+      },
+    };
+  }
+
+  const responseContent = response.choices[0].message.content;
   const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
   const jsonMatch = responseContent.match(jsonRegex);
+  
   if (!jsonMatch) {
-    throw new Error("Invalid response format: JSON array not found in the response");
+    return {
+      success: false,
+      error: {
+        type: "validation",
+        message: "Invalid response format: JSON array not found",
+        retryable: true,
+      },
+    };
   }
 
   try {
-    return JSON.parse(jsonMatch[1]);
-  } catch (parseError) {
-    throw new Error("Error parsing JSON: " + parseError);
+    const data = JSON.parse(jsonMatch[1]);
+    return {
+      success: true,
+      data,
+    };
+  } catch {
+    return {
+      success: false,
+      error: {
+        type: "validation",
+        message: "Failed to parse response data",
+        retryable: true,
+      },
+    };
   }
-})
+}
+
+// Legacy function for backward compatibility - now uses the new API
+export const fetchArchivedNewsLegacy = cache(async (): Promise<ArchiveProps[]> => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.error("OpenAI API key not found in environment variables");
+    return [];
+  }
+
+  const result = await fetchArchivedNews(apiKey);
+  return result.success ? result.data || [] : [];
+});

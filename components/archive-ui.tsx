@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -24,18 +24,75 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArchiveProps } from "@/services/archive";
+import { ArchiveProps, fetchArchivedNews } from "@/services/archive";
 import useSearchQuery from "@/hooks/useSearchQuery";
+import { useApiKey } from "@/components/api-key-provider";
+import { Skeleton } from "@/components/ui/skeleton";
+import QuotaErrorCard from "@/components/quota-error-card";
+import ErrorCard from "@/components/error-page";
 
-export default function ArchivePage({
-  archives,
-}: {
-  archives: ArchiveProps[];
-}) {
-  const [filteredItems, setFilteredItems] = useState<ArchiveProps[]>(archives);
+export default function ArchivePage() {
+  const { apiKey } = useApiKey();
+  const [archives, setArchives] = useState<ArchiveProps[]>([]);
+  const [filteredItems, setFilteredItems] = useState<ArchiveProps[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<{
+    type: "quota" | "auth" | "network" | "validation" | "generic";
+    message: string;
+    retryable: boolean;
+  } | null>(null);
   const [searchKeyword, setSearchKeyword] = useSearchQuery("");
   const [selectedCategory, setSelectedCategory] = useSearchQuery("catagory");
   const [selectedStatus, setSelectedStatus] = useSearchQuery("status");
+
+  const fetchData = useCallback(async () => {
+    if (!apiKey) {
+      setError({
+        type: "auth",
+        message: "Please enter your OpenAI API key",
+        retryable: false,
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const result = await fetchArchivedNews(apiKey);
+      
+      if (!result.success) {
+        setError(result.error!);
+        setArchives([]);
+        setFilteredItems([]);
+      } else {
+        const data = result.data || [];
+        setArchives(data);
+        setFilteredItems(data);
+        setError(null);
+      }
+    } catch (err) {
+      console.log("Unexpected error in fetchData:", err);
+      setError({
+        type: "generic",
+        message: "An unexpected error occurred. Please try again.",
+        retryable: true,
+      });
+      setArchives([]);
+      setFilteredItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiKey]);
+
+  useEffect(() => {
+    fetchData();
+  }, [apiKey, fetchData]);
+
+  const handleRetry = () => {
+    fetchData();
+  };
 
   const handleSearch = () => {
     let filtered = [...archives];
@@ -90,6 +147,75 @@ export default function ArchivePage({
         return null;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Archive className="h-6 w-6 text-primary" />
+          <h1 className="text-3xl font-bold">Legit-Fact Archive</h1>
+        </div>
+        <p className="text-muted-foreground mb-8 max-w-3xl">
+          Browse our comprehensive archive of Legit-Fact news articles. Use the
+          filters below to find specific topics or categories.
+        </p>
+        <div className="grid gap-6">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Archive className="h-6 w-6 text-primary" />
+          <h1 className="text-3xl font-bold">Legit-Fact Archive</h1>
+        </div>
+        {error.type === "quota" ? (
+          <QuotaErrorCard errorMessage={error.message} />
+        ) : (
+          <ErrorCard
+            errorMessage={error.message}
+            onRetry={error.retryable ? handleRetry : undefined}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (archives.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Archive className="h-6 w-6 text-primary" />
+          <h1 className="text-3xl font-bold">Legit-Fact Archive</h1>
+        </div>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">No archived articles found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              No archived articles are available at the moment. Please try again later.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

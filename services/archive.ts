@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import { cache } from "react";
 import {
   withErrorSuppression,
   cleanErrorMessage,
@@ -129,10 +128,7 @@ Here is an example of the format I want:
 Please generate 8 articles in this exact format.`,
           },
         ],
-        model: "gpt-4o",
-        temperature: 1,
-        max_tokens: 4096,
-        top_p: 1,
+        model: "gpt-5",
       });
 
       return {
@@ -275,15 +271,3 @@ export async function fetchArchivedNews(apiKey: string): Promise<ArchiveResult> 
     };
   }
 }
-
-// Legacy function for backward compatibility - now uses the new API
-export const fetchArchivedNewsLegacy = cache(async (): Promise<ArchiveProps[]> => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    console.error("OpenAI API key not found in environment variables");
-    return [];
-  }
-
-  const result = await fetchArchivedNews(apiKey);
-  return result.success ? result.data || [] : [];
-});

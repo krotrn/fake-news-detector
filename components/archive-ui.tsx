@@ -87,6 +87,7 @@ export default function ArchivePage() {
   }, [apiKey]);
 
   useEffect(() => {
+    console.log("hello")
     fetchData();
   }, [apiKey, fetchData]);
 

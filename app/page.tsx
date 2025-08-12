@@ -70,9 +70,7 @@ export default function Home() {
             <Button variant="ghost">View all</Button>
           </Link>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <TrendingMisinformation />
-        </div>
       </section>
 
       <section className="py-8">

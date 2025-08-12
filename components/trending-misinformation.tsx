@@ -32,7 +32,7 @@ export default function TrendingMisinformation() {
     retryable: boolean;
   } | null>(null);
 
-  const fetchData =useCallback( async () => {
+  const fetchData = useCallback(async () => {
     if (!apiKey) {
       setError({
         type: "auth",
@@ -57,7 +57,7 @@ export default function TrendingMisinformation() {
         setError(null);
       }
     } catch (err) {
-      console.log(err)
+      console.log(err);
       setError({
         type: "generic",
         message: "An unexpected error occurred. Please try again.",
@@ -113,7 +113,8 @@ export default function TrendingMisinformation() {
 
   if (isLoading) {
     return (
-      <>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="overflow-hidden">
             <CardHeader className="pb-3">
@@ -126,7 +127,7 @@ export default function TrendingMisinformation() {
             </CardContent>
           </Card>
         ))}
-      </>
+      </div>
     );
   }
 
@@ -145,22 +146,25 @@ export default function TrendingMisinformation() {
 
   if (trendingItems.length === 0) {
     return (
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">No trending articles found</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            No trending articles are available at the moment. Please try again
-            later.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">No trending articles found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              No trending articles are available at the moment. Please try again
+              later.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <>
+
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {trendingItems.map((item) => (
         <Card
           key={item.id}
@@ -194,6 +198,6 @@ export default function TrendingMisinformation() {
           </CardContent>
         </Card>
       ))}
-    </>
+    </div>
   );
 }

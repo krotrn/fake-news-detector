@@ -1,5 +1,4 @@
-import OpenAI from "openai";
-import { cache } from "react";
+import OpenAI from "openai"
 import {
   withErrorSuppression,
   cleanErrorMessage,
@@ -77,10 +76,7 @@ Here is an example of the format I want:
 Please generate at least 6 articles in this exact format.`,
           },
         ],
-        model: "gpt-4o",
-        temperature: 1,
-        max_tokens: 4096,
-        top_p: 1,
+        model: "gpt-5",
       });
 
       return {
@@ -226,6 +222,7 @@ export async function fetchTrendingArticles(
       data,
     };
   } catch (parseError) {
+    console.log(parseError)
     return {
       success: false,
       error: {

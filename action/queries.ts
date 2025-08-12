@@ -173,10 +173,7 @@ async function safeOpenAICall(
           },
           { role: "user", content: prompt },
         ],
-        model: "gpt-4o",
-        temperature: 1,
-        max_tokens: 4096,
-        top_p: 1,
+        model: "gpt-5",
       });
 
       return {

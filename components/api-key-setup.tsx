@@ -13,62 +13,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Key, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useApiKey } from "@/components/api-key-provider";
+import { verifyAPIKey } from "@/modules/ai";
 
-interface ApiKeyVerificationResult {
-  isValid: boolean;
-  error?: string;
-}
-
-const verifyApiKey = async (
-  apiKey: string
-): Promise<ApiKeyVerificationResult> => {
-  try {
-    const response = await fetch("https://api.openai.com/v1/models", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (response.ok) {
-      return { isValid: true };
-    }
-
-    if (response.status === 401) {
-      return {
-        isValid: false,
-        error: "Invalid API key. Please check your key and try again.",
-      };
-    }
-
-    if (response.status === 429) {
-      return {
-        isValid: false,
-        error: "Rate limit exceeded. Please try again in a few minutes.",
-      };
-    }
-
-    if (response.status === 403) {
-      return {
-        isValid: false,
-        error: "Access denied. Please check your API key permissions.",
-      };
-    }
-
-    return {
-      isValid: false,
-      error: "Failed to verify API key. Please try again.",
-    };
-  } catch (error) {
-    console.error("API key verification failed:", error);
-    return {
-      isValid: false,
-      error:
-        "Network error. Please check your internet connection and try again.",
-    };
-  }
-};
+const verifyApiKey = verifyAPIKey;
 
 export default function ApiKeySetup() {
   const { setApiKey, setIsApiKeyValid, setShowWelcome } = useApiKey();
@@ -83,12 +30,12 @@ export default function ApiKeySetup() {
     setIsSuccess(false);
 
     if (!inputKey.trim()) {
-      setError("Please enter your OpenAI API key");
+      setError("Please enter your Gemini API key");
       return;
     }
 
-    if (!inputKey.startsWith("sk-")) {
-      setError("Invalid API key format. OpenAI API keys start with sk-");
+    if (!inputKey.startsWith("AIza") && !inputKey.startsWith("sk-")) {
+      setError("Invalid API key format. Gemini API keys typically start with AIza");
       return;
     }
 
@@ -107,11 +54,11 @@ export default function ApiKeySetup() {
         } else {
           setError(
             result.error ||
-              "Invalid API key. Please check your key and try again."
+            "Invalid API key. Please check your key and try again."
           );
         }
       } catch (error) {
-        console.log(error)
+        console.log(error);
         setError("An unexpected error occurred. Please try again.");
       }
     });
@@ -135,7 +82,7 @@ export default function ApiKeySetup() {
           <CardDescription className="text-center">
             {isSuccess
               ? "Your API key has been verified successfully. Redirecting to homepage..."
-              : "Please enter your OpenAI API key to get started with news verification"}
+              : "Please enter your Gemini API key to get started with news verification"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -145,7 +92,7 @@ export default function ApiKeySetup() {
                 <div className="space-y-2">
                   <Input
                     type="password"
-                    placeholder="Enter your OpenAI API key (sk-...)"
+                    placeholder="Enter your Gemini API key (AIza...)"
                     value={inputKey}
                     onChange={(e) => setInputKey(e.target.value)}
                     className="font-mono"
@@ -180,21 +127,21 @@ export default function ApiKeySetup() {
               </form>
 
               <div className="text-sm text-muted-foreground space-y-2">
-                <p className="font-medium">How to get your OpenAI API key:</p>
+                <p className="font-medium">How to get your Gemini API key:</p>
                 <ol className="list-decimal list-inside space-y-1 text-xs">
                   <li>
                     Visit{" "}
                     <a
-                      href="https://platform.openai.com/api-keys"
+                      href="https://aistudio.google.com/app/apikey"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary underline hover:text-primary/80"
                     >
-                      OpenAI API Keys
+                      Google AI Studio
                     </a>
                   </li>
-                  <li>Sign in to your OpenAI account</li>
-                  <li>Click &ldquo;Create new secret key&ldquo;</li>
+                  <li>Sign in to your Google account</li>
+                  <li>Click &ldquo;Create API key&rdquo;</li>
                   <li>Copy the key and paste it here</li>
                 </ol>
               </div>
@@ -204,7 +151,7 @@ export default function ApiKeySetup() {
                 <AlertDescription className="text-xs">
                   Your API key is stored locally in your browser and never sent
                   to our servers. It&apos;s only used to communicate directly with
-                  OpenAI&apos;s API.
+                  Google&apos;s Gemini API.
                 </AlertDescription>
               </Alert>
             </>

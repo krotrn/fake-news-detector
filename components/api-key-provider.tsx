@@ -42,8 +42,24 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   useEffect(() => {
     const loadApiKey = () => {
       try {
-        const storedApiKey = localStorage.getItem("openai_api_key");
-        const storedValidStatus = localStorage.getItem("openai_api_key_valid");
+        // Migration: Check for old OpenAI API key and migrate it
+        const oldApiKey = localStorage.getItem("openai_api_key");
+        if (oldApiKey && !localStorage.getItem("gemini_api_key")) {
+          // Only migrate if it's a Gemini key format (starts with AIza)
+          if (oldApiKey.startsWith("AIza")) {
+            localStorage.setItem("gemini_api_key", oldApiKey);
+            const oldValidStatus = localStorage.getItem("openai_api_key_valid");
+            if (oldValidStatus) {
+              localStorage.setItem("gemini_api_key_valid", oldValidStatus);
+            }
+          }
+          // Clean up old keys
+          localStorage.removeItem("openai_api_key");
+          localStorage.removeItem("openai_api_key_valid");
+        }
+
+        const storedApiKey = localStorage.getItem("gemini_api_key");
+        const storedValidStatus = localStorage.getItem("gemini_api_key_valid");
         const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
 
         if (storedApiKey) {
@@ -68,7 +84,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const setApiKey = (key: string) => {
     try {
       setApiKeyState(key);
-      localStorage.setItem("openai_api_key", key);
+      localStorage.setItem("gemini_api_key", key);
     } catch (error) {
       console.error("Error storing API key:", error);
     }
@@ -79,8 +95,8 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       setApiKeyState(null);
       setIsApiKeyValid(false);
       setShowWelcome(false);
-      localStorage.removeItem("openai_api_key");
-      localStorage.removeItem("openai_api_key_valid");
+      localStorage.removeItem("gemini_api_key");
+      localStorage.removeItem("gemini_api_key_valid");
       localStorage.removeItem("has_seen_welcome");
     } catch (error) {
       console.error("Error clearing API key:", error);
@@ -90,7 +106,7 @@ export const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   const handleSetIsApiKeyValid = (valid: boolean) => {
     try {
       setIsApiKeyValid(valid);
-      localStorage.setItem("openai_api_key_valid", valid.toString());
+      localStorage.setItem("gemini_api_key_valid", valid.toString());
 
       if (valid && !localStorage.getItem("has_seen_welcome")) {
         setShowWelcome(true);

@@ -49,7 +49,7 @@ export default function ArchivePage() {
     if (!apiKey) {
       setError({
         type: "auth",
-        message: "Please enter your OpenAI API key",
+        message: "Please enter your Gemini API key",
         retryable: false,
       });
       setIsLoading(false);
@@ -59,9 +59,9 @@ export default function ArchivePage() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const result = await fetchArchivedNews(apiKey);
-      
+
       if (!result.success) {
         setError(result.error!);
         setArchives([]);
@@ -87,7 +87,7 @@ export default function ArchivePage() {
   }, [apiKey]);
 
   useEffect(() => {
-    console.log("hello")
+    console.log("hello");
     fetchData();
   }, [apiKey, fetchData]);
 

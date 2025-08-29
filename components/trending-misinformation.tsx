@@ -36,7 +36,7 @@ export default function TrendingMisinformation() {
     if (!apiKey) {
       setError({
         type: "auth",
-        message: "Please enter your OpenAI API key",
+        message: "Please enter your Gemini API key",
         retryable: false,
       });
       setIsLoading(false);
@@ -56,8 +56,7 @@ export default function TrendingMisinformation() {
         setTrendingItems(result.data || []);
         setError(null);
       }
-    } catch (err) {
-      console.log(err);
+    } catch {
       setError({
         type: "generic",
         message: "An unexpected error occurred. Please try again.",

@@ -65,7 +65,7 @@ export default function VerifyPage() {
       });
       return;
     }
-    const apiKey = localStorage.getItem("openai_api_key");
+    const apiKey = localStorage.getItem("gemini_api_key");
     if (!apiKey) {
       setError({
         message: "API key not found. Please set up your OpenAI API key.",

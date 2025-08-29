@@ -45,10 +45,10 @@ export default function TrendingPage() {
       setIsLoading(true);
       setError(null);
 
-      const apiKey = localStorage.getItem("openai_api_key");
+      const apiKey = localStorage.getItem("gemini_api_key");
       if (!apiKey) {
         setError({
-          message: "API key not found. Please set up your OpenAI API key.",
+          message: "API key not found. Please set up your Gemini API key.",
           type: "auth",
           retryable: false,
         });
@@ -205,7 +205,7 @@ export default function TrendingPage() {
   );
 }
 
-function TrendingCard({ item }: { item: TrendingProps }) {
+function TrendingCard({ item }: { item: TrendingProps; }) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "fake":
